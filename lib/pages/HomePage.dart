@@ -1,5 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+
+final GoogleSignIn googleSignIn = GoogleSignIn();
 
 class HomePage extends StatefulWidget {
   @override
@@ -9,8 +12,49 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   bool isSignedIn = false;
 
+  void initState() {
+    super.initState();
+    googleSignIn.onCurrentUserChanged.listen((googleSignInAccount) {
+      controlSignIn(googleSignInAccount);
+    }, onError: (gError) {
+      print('Error: ' + gError);
+    });
+
+    googleSignIn.signInSilently(suppressErrors: false).then(
+      (googleSignInAccount) {
+        controlSignIn(googleSignInAccount);
+      },
+    ).catchError((gError) {
+      print('Error: ' + gError);
+    });
+  }
+
+  controlSignIn(GoogleSignInAccount googleSignInAccount) async {
+    if (googleSignInAccount != null) {
+      setState(() {
+        isSignedIn = true;
+      });
+    } else {
+      setState(() {
+        isSignedIn = false;
+      });
+    }
+  }
+
+  loginUser() {
+    googleSignIn.signIn();
+  }
+
+  logoutUser(){
+    googleSignIn.signOut();
+  }
+
   Widget buildHomeScreen() {
-    return Text('singed in');
+    return RaisedButton.icon(
+      onPressed: logoutUser,
+      label: Text('Sign Out'),
+      icon: Icon(Icons.close),
+    );
   }
 
   Widget buildSignInScreen() {
@@ -18,10 +62,12 @@ class _HomePageState extends State<HomePage> {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-            colors: [Theme.of(context).accentColor,Theme.of(context).primaryColor]
-          ),
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+              colors: [
+                Theme.of(context).accentColor,
+                Theme.of(context).primaryColor
+              ]),
         ),
         alignment: Alignment.center,
         child: Column(
@@ -37,7 +83,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             GestureDetector(
-              onTap: () => "button taped",
+              onTap: loginUser,
               child: Container(
                 width: 270,
                 height: 65.0,
