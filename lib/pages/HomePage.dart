@@ -1,3 +1,8 @@
+import 'package:buddiesgram/pages/NotificationsPage.dart';
+import 'package:buddiesgram/pages/ProfilePage.dart';
+import 'package:buddiesgram/pages/SearchPage.dart';
+import 'package:buddiesgram/pages/TimeLinePage.dart';
+import 'package:buddiesgram/pages/UploadPage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -11,9 +16,14 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   bool isSignedIn = false;
+  PageController pageController;
+  int getPageIndex = 0;
 
   void initState() {
     super.initState();
+
+    pageController = PageController();
+
     googleSignIn.onCurrentUserChanged.listen((googleSignInAccount) {
       controlSignIn(googleSignInAccount);
     }, onError: (gError) {
@@ -41,6 +51,11 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  void dispose(){
+    pageController.dispose();
+    super.dispose();
+  }
+
   loginUser() {
     googleSignIn.signIn();
   }
@@ -49,12 +64,50 @@ class _HomePageState extends State<HomePage> {
     googleSignIn.signOut();
   }
 
-  Widget buildHomeScreen() {
-    return RaisedButton.icon(
-      onPressed: logoutUser,
-      label: Text('Sign Out'),
-      icon: Icon(Icons.close),
+  whenPageChanges(int pageIndex){
+    setState(() {
+      this.getPageIndex = pageIndex;
+    });
+  }
+
+  onTapchangePage(int pageIndex){
+    pageController.animateToPage(pageIndex, duration: Duration(milliseconds: 400), curve: Curves.bounceInOut);
+  }
+
+  Scaffold buildHomeScreen() {
+    return Scaffold(
+      body: PageView(
+        children: [
+          TimeLinePage(),
+          SearchPage(),
+          UploadPage(),
+          NotificationsPage(),
+          ProfilePage(),
+        ],
+        controller: pageController,
+        onPageChanged: whenPageChanges,
+        physics: NeverScrollableScrollPhysics(),
+      ),
+      bottomNavigationBar: CupertinoTabBar(
+        currentIndex: getPageIndex,
+        onTap: onTapchangePage,
+        activeColor: Colors.white,
+        inactiveColor: Colors.blueGrey,
+        backgroundColor: Theme.of(context).accentColor,
+        items: [
+          BottomNavigationBarItem(icon: Icon(Icons.home)),
+          BottomNavigationBarItem(icon: Icon(Icons.search)),
+          BottomNavigationBarItem(icon: Icon(Icons.photo_camera,size: 37.0)),
+          BottomNavigationBarItem(icon: Icon(Icons.favorite)),
+          BottomNavigationBarItem(icon: Icon(Icons.person)),
+        ],
+      ),
     );
+    // return RaisedButton.icon(
+    //   onPressed: logoutUser,
+    //   label: Text('Sign Out'),
+    //   icon: Icon(Icons.close),
+    // );
   }
 
   Widget buildSignInScreen() {
