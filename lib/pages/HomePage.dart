@@ -1,13 +1,20 @@
+import 'package:buddiesgram/models/user.dart';
+import 'package:buddiesgram/pages/CreateAccountPage.dart';
 import 'package:buddiesgram/pages/NotificationsPage.dart';
 import 'package:buddiesgram/pages/ProfilePage.dart';
 import 'package:buddiesgram/pages/SearchPage.dart';
 import 'package:buddiesgram/pages/TimeLinePage.dart';
 import 'package:buddiesgram/pages/UploadPage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 final GoogleSignIn googleSignIn = GoogleSignIn();
+final userReference = Firestore.instance.collection('users');
+final DateTime timestamp = DateTime.now();
+
+User currentUser;
 
 class HomePage extends StatefulWidget {
   @override
@@ -40,6 +47,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   controlSignIn(GoogleSignInAccount googleSignInAccount) async {
+    await saveUserInfotoFireStore();
+
     if (googleSignInAccount != null) {
       setState(() {
         isSignedIn = true;
@@ -51,7 +60,30 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void dispose(){
+  saveUserInfotoFireStore() async {
+    final GoogleSignInAccount gCurrentUser = googleSignIn.currentUser;
+    DocumentSnapshot documentSnapshot =
+        await userReference.document(gCurrentUser.id).get();
+
+    if (!documentSnapshot.exists) {
+      final username = await Navigator.push(context,
+          MaterialPageRoute(builder: (context) => CreateAccountPage()));
+
+      userReference.document(gCurrentUser.id).setData({
+        "id": gCurrentUser.id,
+        "profileName": gCurrentUser.displayName,
+        "userName": username,
+        "url": gCurrentUser.photoUrl,
+        "email": gCurrentUser.email,
+        "bio": null,
+        "timestamp": timestamp,
+      });
+      documentSnapshot = await userReference.document(gCurrentUser.id).get();
+    }
+    currentUser = User.fromDocument(documentSnapshot);
+  }
+
+  void dispose() {
     pageController.dispose();
     super.dispose();
   }
@@ -60,25 +92,34 @@ class _HomePageState extends State<HomePage> {
     googleSignIn.signIn();
   }
 
-  logoutUser(){
+  logoutUser() {
     googleSignIn.signOut();
+    setState(() {
+      isSignedIn = false;
+    });
   }
 
-  whenPageChanges(int pageIndex){
+  whenPageChanges(int pageIndex) {
     setState(() {
       this.getPageIndex = pageIndex;
     });
   }
 
-  onTapchangePage(int pageIndex){
-    pageController.animateToPage(pageIndex, duration: Duration(milliseconds: 400), curve: Curves.bounceInOut);
+  onTapchangePage(int pageIndex) {
+    pageController.animateToPage(pageIndex,
+        duration: Duration(milliseconds: 400), curve: Curves.bounceInOut);
   }
 
   Scaffold buildHomeScreen() {
     return Scaffold(
       body: PageView(
         children: [
-          TimeLinePage(),
+          // TimeLinePage(),
+          RaisedButton.icon(
+            onPressed: logoutUser,
+            label: Text('Sign Out'),
+            icon: Icon(Icons.close),
+          ),
           SearchPage(),
           UploadPage(),
           NotificationsPage(),
@@ -97,17 +138,12 @@ class _HomePageState extends State<HomePage> {
         items: [
           BottomNavigationBarItem(icon: Icon(Icons.home)),
           BottomNavigationBarItem(icon: Icon(Icons.search)),
-          BottomNavigationBarItem(icon: Icon(Icons.photo_camera,size: 37.0)),
+          BottomNavigationBarItem(icon: Icon(Icons.photo_camera, size: 37.0)),
           BottomNavigationBarItem(icon: Icon(Icons.favorite)),
           BottomNavigationBarItem(icon: Icon(Icons.person)),
         ],
       ),
     );
-    // return RaisedButton.icon(
-    //   onPressed: logoutUser,
-    //   label: Text('Sign Out'),
-    //   icon: Icon(Icons.close),
-    // );
   }
 
   Widget buildSignInScreen() {
