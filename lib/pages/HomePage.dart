@@ -72,7 +72,7 @@ class _HomePageState extends State<HomePage> {
       userReference.document(gCurrentUser.id).setData({
         "id": gCurrentUser.id,
         "profileName": gCurrentUser.displayName,
-        "userName": username,
+        "username": username,
         "url": gCurrentUser.photoUrl,
         "email": gCurrentUser.email,
         "bio": null,
