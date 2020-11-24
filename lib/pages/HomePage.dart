@@ -6,14 +6,16 @@ import 'package:buddiesgram/pages/SearchPage.dart';
 import 'package:buddiesgram/pages/TimeLinePage.dart';
 import 'package:buddiesgram/pages/UploadPage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 final GoogleSignIn googleSignIn = GoogleSignIn();
 final userReference = Firestore.instance.collection('users');
+final storageReference = FirebaseStorage.instance.ref().child("Posts Pictures");
+final postsReference = Firestore.instance.collection('posts');
 final DateTime timestamp = DateTime.now();
-
 User currentUser;
 
 class HomePage extends StatefulWidget {
@@ -121,7 +123,7 @@ class _HomePageState extends State<HomePage> {
             icon: Icon(Icons.close),
           ),
           SearchPage(),
-          UploadPage(),
+          UploadPage(gCurrentUser: currentUser,),
           NotificationsPage(),
           ProfilePage(),
         ],
