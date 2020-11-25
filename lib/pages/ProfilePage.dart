@@ -2,8 +2,11 @@ import 'package:buddiesgram/models/user.dart';
 import 'package:buddiesgram/pages/EditProfilePage.dart';
 import 'package:buddiesgram/pages/HomePage.dart';
 import 'package:buddiesgram/widgets/HeaderWidget.dart';
+import 'package:buddiesgram/widgets/PostTileWidget.dart';
+import 'package:buddiesgram/widgets/PostWidget.dart';
 import 'package:buddiesgram/widgets/ProgressWidget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -14,13 +17,22 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  bool loading = false;
+  int countPost = 0;
+  List<Post> postList = [];
+  String postOrientation = "grid";
 
   final String currentOnlineUserId = currentUser?.id;
 
-  createProfileTopView(){
+  void initState() {
+    super.initState();
+    getAllProfilePosts();
+  }
+
+  createProfileTopView() {
     return FutureBuilder(
       future: userReference.document(widget.userProfileId).get(),
-      builder: (context, dataSnapshot){
+      builder: (context, dataSnapshot) {
         if (!dataSnapshot.hasData) {
           return circularProgress();
         }
@@ -44,9 +56,9 @@ class _ProfilePageState extends State<ProfilePage> {
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            createColumns("Posts",0),
-                            createColumns("Followers",0),
-                            createColumns("Following",0),
+                            createColumns("Posts", 0),
+                            createColumns("Followers", 0),
+                            createColumns("Following", 0),
                           ],
                         ),
                         Row(
@@ -66,7 +78,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 padding: EdgeInsets.only(top: 13.0),
                 child: Text(
                   user.username,
-                  style: TextStyle(fontSize: 14.0,color: Colors.white),
+                  style: TextStyle(fontSize: 14.0, color: Colors.white),
                 ),
               ),
               Container(
@@ -74,7 +86,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 padding: EdgeInsets.only(top: 5.0),
                 child: Text(
                   user.profileName,
-                  style: TextStyle(fontSize: 18.0,color: Colors.white),
+                  style: TextStyle(fontSize: 18.0, color: Colors.white),
                 ),
               ),
               Container(
@@ -82,7 +94,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 padding: EdgeInsets.only(top: 3.0),
                 child: Text(
                   user.bio ?? "hi",
-                  style: TextStyle(fontSize: 18.0,color: Colors.white70),
+                  style: TextStyle(fontSize: 18.0, color: Colors.white70),
                 ),
               ),
             ],
@@ -92,34 +104,40 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Column createColumns(String title, int count){
+  Column createColumns(String title, int count) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
           count.toString(),
-          style: TextStyle(fontSize: 20.0,fontWeight: FontWeight.bold,color: Colors.white),
+          style: TextStyle(
+              fontSize: 20.0, fontWeight: FontWeight.bold, color: Colors.white),
         ),
         Container(
           margin: EdgeInsets.only(top: 5.0),
           child: Text(
             title,
-            style: TextStyle(fontSize: 16.0, color: Colors.grey, fontWeight: FontWeight.w300),
+            style: TextStyle(
+                fontSize: 16.0,
+                color: Colors.grey,
+                fontWeight: FontWeight.w300),
           ),
         ),
       ],
     );
   }
 
-  createButton(){
+  createButton() {
     bool ownProfile = currentOnlineUserId == widget.userProfileId;
     if (ownProfile) {
-      return createButtonTitleAndFunction(title: "Edit Profile", performFunction: editUserProfile);
+      return createButtonTitleAndFunction(
+          title: "Edit Profile", performFunction: editUserProfile);
     }
   }
 
-  Container createButtonTitleAndFunction({String title, Function performFunction}){
+  Container createButtonTitleAndFunction(
+      {String title, Function performFunction}) {
     return Container(
       padding: EdgeInsets.only(top: 3.0),
       child: FlatButton(
@@ -129,7 +147,7 @@ class _ProfilePageState extends State<ProfilePage> {
           height: 26.0,
           child: Text(
             title,
-            style: TextStyle(color: Colors.grey,fontWeight: FontWeight.bold),
+            style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
           ),
           alignment: Alignment.center,
           decoration: BoxDecoration(
@@ -142,8 +160,12 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  editUserProfile(){
-    Navigator.push(context, MaterialPageRoute(builder: (context) => EditProfilePage(currentOnlineUserId: currentOnlineUserId)));
+  editUserProfile() {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) =>
+                EditProfilePage(currentOnlineUserId: currentOnlineUserId)));
   }
 
   @override
@@ -153,8 +175,108 @@ class _ProfilePageState extends State<ProfilePage> {
       body: ListView(
         children: [
           createProfileTopView(),
+          Divider(),
+          createListAndGridViewOrientation(),
+          Divider(height: 0.0),
+          displayProfilePost(),
         ],
       ),
     );
+  }
+
+  displayProfilePost() {
+    if (loading) {
+      return circularProgress();
+    } else if (postList.isEmpty) {
+      return Container(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Padding(
+              padding: EdgeInsets.all(30.0),
+              child: Icon(Icons.photo_library, color: Colors.grey, size: 200.0),
+            ),
+            Padding(
+              padding: EdgeInsets.only(top: 20.0),
+              child: Text(
+                "No Posts",
+                style: TextStyle(
+                  color: Colors.redAccent,
+                  fontSize: 48.0,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    } else if (postOrientation == "grid") {
+      List<GridTile> gridTilesList = [];
+      postList.forEach((eachPost) {
+        gridTilesList.add(GridTile(
+          child: PostTile(eachPost),
+        ));
+      });
+      return GridView.count(
+        crossAxisCount: 3,
+        childAspectRatio: 1.0,
+        mainAxisSpacing: 1.5,
+        crossAxisSpacing: 1.5,
+        shrinkWrap: true,
+        physics: NeverScrollableScrollPhysics(),
+        children: gridTilesList
+      );
+    } else if (postOrientation == "list") {
+      return Column(
+        children: postList,
+      );
+    }
+  }
+
+  getAllProfilePosts() async {
+    setState(() {
+      loading = true;
+    });
+
+    QuerySnapshot querySnapshot = await postsReference
+        .document(widget.userProfileId)
+        .collection("usersPosts")
+        .orderBy("timestamp", descending: true)
+        .getDocuments();
+    setState(() {
+      loading = false;
+      countPost = querySnapshot.documents.length;
+      postList = querySnapshot.documents
+          .map((documentSnapshot) => Post.fromDocument(documentSnapshot))
+          .toList();
+    });
+  }
+
+  createListAndGridViewOrientation() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        IconButton(
+          icon: Icon(Icons.grid_on),
+          color: postOrientation == "grid"
+              ? Theme.of(context).primaryColor
+              : Colors.grey,
+          onPressed: () => setOrientation("grid"),
+        ),
+        IconButton(
+          icon: Icon(Icons.list),
+          color: postOrientation == "list"
+              ? Theme.of(context).primaryColor
+              : Colors.grey,
+          onPressed: () => setOrientation("list"),
+        ),
+      ],
+    );
+  }
+
+  setOrientation(String orientation) {
+    setState(() {
+      this.postOrientation = orientation;
+    });
   }
 }
