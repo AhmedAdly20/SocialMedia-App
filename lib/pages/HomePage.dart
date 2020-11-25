@@ -116,16 +116,11 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       body: PageView(
         children: [
-          // TimeLinePage(),
-          RaisedButton.icon(
-            onPressed: logoutUser,
-            label: Text('Sign Out'),
-            icon: Icon(Icons.close),
-          ),
+          TimeLinePage(),
           SearchPage(),
           UploadPage(gCurrentUser: currentUser,),
           NotificationsPage(),
-          ProfilePage(),
+          ProfilePage(userProfileId: currentUser.id),
         ],
         controller: pageController,
         onPageChanged: whenPageChanges,
