@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:buddiesgram/models/user.dart';
 import 'package:buddiesgram/pages/CommentsPage.dart';
 import 'package:buddiesgram/pages/HomePage.dart';
+import 'package:buddiesgram/pages/ProfilePage.dart';
 import 'package:buddiesgram/widgets/ProgressWidget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -122,7 +123,7 @@ class _PostState extends State<Post> {
               backgroundImage: CachedNetworkImageProvider(user.url),
               backgroundColor: Colors.grey),
           title: GestureDetector(
-            onTap: () => print('showprofile'),
+            onTap: () => displayUserProfile(context, userProfileId: user.id),
             child: Text(
               user.username ?? "",
               style:
@@ -144,6 +145,17 @@ class _PostState extends State<Post> {
     );
   }
 
+  displayUserProfile(context, {String userProfileId}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProfilePage(
+          userProfileId: userProfileId,
+        ),
+      ),
+    );
+  }
+
   addLike() {
     bool isNotPostOwner = currentOnlineUserId != ownerId;
     if (isNotPostOwner) {
@@ -155,10 +167,10 @@ class _PostState extends State<Post> {
         "type": "like",
         "username": currentUser.username,
         "userId": currentUser.id,
-        "timestamp": timestamp,
+        "timestamp": DateTime.now(),
         "url": url,
         "postId": postId,
-        "userPorfileImage": currentUser.url,
+        "userProfileImage": currentUser.url,
       });
     }
   }

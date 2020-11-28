@@ -151,8 +151,12 @@ class UserResult extends StatelessWidget {
 
   displayUserProfile(context, {String userProfileId}) {
     Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => ProfilePage(userProfileId: userProfileId)));
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProfilePage(
+          userProfileId: userProfileId,
+        ),
+      ),
+    );
   }
 }

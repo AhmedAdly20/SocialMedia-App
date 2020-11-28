@@ -248,7 +248,7 @@ class _ProfilePageState extends State<ProfilePage> {
       "ownerId": widget.userProfileId,
       "username": currentUser.username,
       "timestamp": DateTime.now(),
-      "userProfileImg": currentUser.url,
+      "userProfileImage": currentUser.url,
       "userId": currentUser.id,
     });
     setState(() {
